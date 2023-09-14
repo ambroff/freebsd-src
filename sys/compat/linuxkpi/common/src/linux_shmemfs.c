@@ -48,8 +48,10 @@ linux_shmem_read_mapping_page_gfp(vm_object_t obj, int pindex, gfp_t gfp)
 	struct page *page;
 	int rv;
 
+#if 0
 	if ((gfp & GFP_NOWAIT) != 0)
 		panic("GFP_NOWAIT is unimplemented");
+#endif
 
 	VM_OBJECT_WLOCK(obj);
 	rv = vm_page_grab_valid(&page, obj, pindex, VM_ALLOC_NORMAL |
