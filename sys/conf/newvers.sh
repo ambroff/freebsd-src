@@ -28,8 +28,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-#
-#	@(#)newvers.sh	8.1 (Berkeley) 4/20/94
 
 # Command line options:
 #
@@ -217,15 +215,6 @@ for dir in /usr/bin /usr/local/bin; do
 		fi
 	fi
 done
-
-if [ -z "${svnversion}" ] && [ -x /usr/bin/svnliteversion ] ; then
-	/usr/bin/svnliteversion $(realpath ${0}) >/dev/null 2>&1
-	if [ $? -eq 0 ]; then
-		svnversion=/usr/bin/svnliteversion
-	else
-		svnversion=
-	fi
-fi
 
 if findvcs .git; then
 	for dir in /usr/bin /usr/local/bin; do

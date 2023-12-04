@@ -31,7 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/consio.h>
 #include <sys/devctl.h>
@@ -274,6 +273,7 @@ SYSINIT(vt_early_cons, SI_SUB_INT_CONFIG_HOOKS, SI_ORDER_ANY, vt_upgrade,
     &vt_consdev);
 
 static bool inside_vt_flush = false;
+static bool inside_vt_window_switch = false;
 
 /* Initialize locks/mem depended members. */
 static void
@@ -564,6 +564,11 @@ vt_window_switch(struct vt_window *vw)
 	struct vt_window *curvw = vd->vd_curwindow;
 	keyboard_t *kbd;
 
+	if (inside_vt_window_switch && KERNEL_PANICKED())
+		return (0);
+
+	inside_vt_window_switch = true;
+
 	if (kdb_active) {
 		/*
 		 * When grabbing the console for the debugger, avoid
@@ -573,15 +578,16 @@ vt_window_switch(struct vt_window *vw)
 		 * debugger entry/exit to be equivalent to
 		 * successfully try-locking here.
 		 */
-		if (curvw == vw)
-			return (0);
-		if (!(vw->vw_flags & (VWF_OPENED|VWF_CONSOLE)))
+		if (!(vw->vw_flags & (VWF_OPENED|VWF_CONSOLE))) {
+			inside_vt_window_switch = false;
 			return (EINVAL);
+		}
 
 		vd->vd_curwindow = vw;
 		vd->vd_flags |= VDF_INVALID;
 		if (vd->vd_driver->vd_postswitch)
 			vd->vd_driver->vd_postswitch(vd);
+		inside_vt_window_switch = false;
 		return (0);
 	}
 
@@ -595,10 +601,12 @@ vt_window_switch(struct vt_window *vw)
 		if ((kdb_active || KERNEL_PANICKED()) &&
 		    vd->vd_driver->vd_postswitch)
 			vd->vd_driver->vd_postswitch(vd);
+		inside_vt_window_switch = false;
 		VT_UNLOCK(vd);
 		return (0);
 	}
 	if (!(vw->vw_flags & (VWF_OPENED|VWF_CONSOLE))) {
+		inside_vt_window_switch = false;
 		VT_UNLOCK(vd);
 		return (EINVAL);
 	}
@@ -627,6 +635,7 @@ vt_window_switch(struct vt_window *vw)
 	mtx_unlock(&Giant);
 	DPRINTF(10, "%s(ttyv%d) done\n", __func__, vw->vw_number);
 
+	inside_vt_window_switch = false;
 	return (0);
 }
 
@@ -2037,7 +2046,7 @@ static void
 vtterm_cnungrab(struct terminal *tm)
 {
 	struct vt_device *vd;
-	struct vt_window *vw;
+	struct vt_window *vw, *grabwindow;
 
 	vw = tm->tm_softc;
 	vd = vw->vw_device;
@@ -2046,10 +2055,19 @@ vtterm_cnungrab(struct terminal *tm)
 	if (vtterm_cnungrab_noswitch(vd, vw) != 0)
 		return;
 
-	if (!cold && vd->vd_grabwindow != vw)
-		vt_window_switch(vd->vd_grabwindow);
-
+	/*
+	 * We set `vd_grabwindow` to NULL before calling vt_window_switch()
+	 * because it allows the underlying vt(4) backend to distinguish a
+	 * "grab" from an "ungrab" of the console.
+	 *
+	 * This is used by `vt_drmfb` in drm-kmod to call either
+	 * fb_debug_enter() or fb_debug_leave() appropriately.
+	 */
+	grabwindow = vd->vd_grabwindow;
 	vd->vd_grabwindow = NULL;
+
+	if (!cold)
+		vt_window_switch(grabwindow);
 }
 
 static void
@@ -3266,6 +3284,10 @@ vt_replace_backend(const struct vt_driver *drv, void *softc)
 	/* Update windows sizes and initialize last items. */
 	vt_upgrade(vd);
 
+	/*
+	 * Give a chance to the new backend to run the post-switch code, for
+	 * instance to refresh the screen.
+	 */
 	if (vd->vd_driver->vd_postswitch)
 		vd->vd_driver->vd_postswitch(vd);
 

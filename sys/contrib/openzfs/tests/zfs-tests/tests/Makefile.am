@@ -1104,6 +1104,10 @@ nobase_dist_datadir_zfs_tests_tests_SCRIPTS += \
 	functional/cli_root/zpool_import/zpool_import_features_001_pos.ksh \
 	functional/cli_root/zpool_import/zpool_import_features_002_neg.ksh \
 	functional/cli_root/zpool_import/zpool_import_features_003_pos.ksh \
+	functional/cli_root/zpool_import/zpool_import_hostid_changed.ksh \
+	functional/cli_root/zpool_import/zpool_import_hostid_changed_unclean_export.ksh \
+	functional/cli_root/zpool_import/zpool_import_hostid_changed_cachefile.ksh \
+	functional/cli_root/zpool_import/zpool_import_hostid_changed_cachefile_unclean_export.ksh \
 	functional/cli_root/zpool_import/zpool_import_missing_001_pos.ksh \
 	functional/cli_root/zpool_import/zpool_import_missing_002_pos.ksh \
 	functional/cli_root/zpool_import/zpool_import_missing_003_pos.ksh \
@@ -1427,6 +1431,7 @@ nobase_dist_datadir_zfs_tests_tests_SCRIPTS += \
 	functional/fault/auto_online_001_pos.ksh \
 	functional/fault/auto_online_002_pos.ksh \
 	functional/fault/auto_replace_001_pos.ksh \
+	functional/fault/auto_replace_002_pos.ksh \
 	functional/fault/auto_spare_001_pos.ksh \
 	functional/fault/auto_spare_002_pos.ksh \
 	functional/fault/auto_spare_ashift.ksh \
@@ -1663,8 +1668,14 @@ nobase_dist_datadir_zfs_tests_tests_SCRIPTS += \
 	functional/raidz/cleanup.ksh \
 	functional/raidz/raidz_001_neg.ksh \
 	functional/raidz/raidz_002_pos.ksh \
-	functional/raidz/raidz_003_pos.ksh \
-	functional/raidz/raidz_004_pos.ksh \
+	functional/raidz/raidz_expand_001_pos.ksh \
+	functional/raidz/raidz_expand_002_pos.ksh \
+	functional/raidz/raidz_expand_003_neg.ksh \
+	functional/raidz/raidz_expand_003_pos.ksh \
+	functional/raidz/raidz_expand_004_pos.ksh \
+	functional/raidz/raidz_expand_005_pos.ksh \
+	functional/raidz/raidz_expand_006_neg.ksh \
+	functional/raidz/raidz_expand_007_neg.ksh \
 	functional/raidz/setup.ksh \
 	functional/redacted_send/cleanup.ksh \
 	functional/redacted_send/redacted_compressed.ksh \

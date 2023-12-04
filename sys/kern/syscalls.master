@@ -1,5 +1,3 @@
-;	from: @(#)syscalls.master	8.2 (Berkeley) 1/13/94
-;
 ; System call name/number master file.
 ; Processed to created init_sysent.c, syscalls.c and syscall.h.
 
@@ -34,6 +32,7 @@
 ;	COMPAT11 included on COMPAT_FREEBSD11 #ifdef (FreeBSD 11 compat)
 ;	COMPAT12 included on COMPAT_FREEBSD12 #ifdef (FreeBSD 12 compat)
 ;	COMPAT13 included on COMPAT_FREEBSD13 #ifdef (FreeBSD 13 compat)
+;	COMPAT14 included on COMPAT_FREEBSD14 #ifdef (FreeBSD 14 compat)
 ;	OBSOL	obsolete, not included in system, only specifies name
 ;	RESERVED reserved for local or vendor use (not for FreeBSD)
 ;	UNIMPL	not implemented, placeholder only
