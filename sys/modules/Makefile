@@ -908,13 +908,15 @@ SUBDIR:= ${SUBDIR:N${reject}}
 .endif # MODULES_OVERRIDE -- Keep last
 
 # Calling kldxref(8) for each module is expensive.
-.if !defined(NO_XREF)
+# XXX: kldxref lacks support for arm
+.if !defined(NO_XREF) && ${MACHINE_CPUARCH} != "arm"
 .MAKEFLAGS+=	-DNO_XREF
 afterinstall: .PHONY
-	@if type kldxref >/dev/null 2>&1; then \
-		${ECHO} ${KLDXREF_CMD} ${DESTDIR}${KMODDIR}; \
-		${KLDXREF_CMD} ${DESTDIR}${KMODDIR}; \
-	fi
+	${KLDXREF_CMD} ${DESTDIR}${KMODDIR}
+.if defined(NO_ROOT) && defined(METALOG)
+	echo ".${DISTBASE}${KMODDIR}/linker.hints type=file mode=0644 uname=root gname=wheel" | \
+	    cat -l >> ${METALOG}
+.endif
 .endif
 
 SUBDIR:= ${SUBDIR:u:O}

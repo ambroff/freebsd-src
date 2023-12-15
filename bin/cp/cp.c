@@ -72,8 +72,8 @@ static char emptystring[] = "";
 
 PATH_T to = { to.p_path, emptystring, "" };
 
-int fflag, iflag, lflag, nflag, pflag, sflag, vflag;
-static int Hflag, Lflag, Rflag, rflag;
+int Nflag, fflag, iflag, lflag, nflag, pflag, sflag, vflag;
+static int Hflag, Lflag, Pflag, Rflag, rflag;
 volatile sig_atomic_t info;
 
 enum op { FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE };
@@ -86,12 +86,11 @@ main(int argc, char *argv[])
 {
 	struct stat to_stat, tmp_stat;
 	enum op type;
-	int Pflag, ch, fts_options, r, have_trailing_slash;
+	int ch, fts_options, r, have_trailing_slash;
 	char *target;
 
 	fts_options = FTS_NOCHDIR | FTS_PHYSICAL;
-	Pflag = 0;
-	while ((ch = getopt(argc, argv, "HLPRafilnprsvx")) != -1)
+	while ((ch = getopt(argc, argv, "HLPRafilNnprsvx")) != -1)
 		switch (ch) {
 		case 'H':
 			Hflag = 1;
@@ -124,6 +123,9 @@ main(int argc, char *argv[])
 			break;
 		case 'l':
 			lflag = 1;
+			break;
+		case 'N':
+			Nflag = 1;
 			break;
 		case 'n':
 			nflag = 1;
