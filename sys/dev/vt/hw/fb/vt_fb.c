@@ -171,7 +171,24 @@ vt_fb_setpixel(struct vt_device *vd, int x, int y, term_color_t color)
 
 	info = vd->vd_softc;
 	c = info->fb_cmap[color];
-	o = info->fb_stride * y + x * FBTYPE_GET_BYTESPP(info);
+
+	switch (info->fb_flags & (FB_FLAG_ROTATE_90 | FB_FLAG_ROTATE_180)) {
+	case 0:
+		o = info->fb_stride * y + x * FBTYPE_GET_BYTESPP(info);
+		break;
+	case (FB_FLAG_ROTATE_90 | FB_FLAG_ROTATE_180):
+		o = info->fb_stride * x +
+		    (info->fb_width - y - 1) * FBTYPE_GET_BYTESPP(info);
+		break;
+	case FB_FLAG_ROTATE_90:
+		o = info->fb_stride * (info->fb_height -x - 1) +
+		    y * FBTYPE_GET_BYTESPP(info);
+		break;
+	case FB_FLAG_ROTATE_180:
+		o = info->fb_stride * (info->fb_height - y - 1) +
+		    (info->fb_width - x - 1) * FBTYPE_GET_BYTESPP(info);
+		break;
+	}
 
 	if (info->fb_flags & FB_FLAG_NOWRITE)
 		return;
@@ -304,7 +321,27 @@ vt_fb_bitblt_bitmap(struct vt_device *vd, const struct vt_window *vw,
 			/* Skip pixel write, if mask bit not set. */
 			if (mask != NULL && (mask[byte] & bit) == 0)
 				continue;
-			o = (y + yi) * info->fb_stride + (x + xi) * bpp;
+
+			switch (info->fb_flags & (FB_FLAG_ROTATE_90 |
+						  FB_FLAG_ROTATE_180)) {
+			case 0:
+				o = (y + yi) * info->fb_stride + (x + xi) * bpp;
+				break;
+			case (FB_FLAG_ROTATE_90 | FB_FLAG_ROTATE_180):
+				o = (x + xi) * info->fb_stride +
+				    (info->fb_width - (y + yi + 1)) * bpp;
+				break;
+			case FB_FLAG_ROTATE_90:
+				o = (info->fb_height - (x + xi +1)) *
+				    info->fb_stride + (y + yi) * bpp;
+				break;
+			case FB_FLAG_ROTATE_180:
+				o = (info->fb_height - (y + yi + 1)) *
+				    info->fb_stride +
+				    (info->fb_width - (x + xi + 1)) * bpp;
+				break;
+			}
+
 			o += vd->vd_transpose;
 			cc = pattern[byte] & bit ? fgc : bgc;
 
@@ -464,16 +501,48 @@ vt_fb_init(struct vt_device *vd)
 {
 	struct fb_info *info;
 	u_int margin;
-	int bg, err;
+	int bg, rotate, err;
 	term_color_t c;
 
 	info = vd->vd_softc;
-	vd->vd_height = MIN(VT_FB_MAX_HEIGHT, info->fb_height);
-	margin = (info->fb_height - vd->vd_height) >> 1;
-	vd->vd_transpose = margin * info->fb_stride;
-	vd->vd_width = MIN(VT_FB_MAX_WIDTH, info->fb_width);
-	margin = (info->fb_width - vd->vd_width) >> 1;
-	vd->vd_transpose += margin * (info->fb_bpp / NBBY);
+	if (TUNABLE_INT_FETCH("kern.vt.rotate", &rotate) != 0) {
+		switch (rotate) {
+		case 1:
+			if (info->fb_height > info->fb_width) {
+			    info->fb_flags |= FB_FLAG_ROTATE_90;
+			    info->fb_flags |= FB_FLAG_ROTATE_180;
+			}
+			break;
+		case 90:
+			info->fb_flags |= FB_FLAG_ROTATE_90;
+			break;
+		case 180:
+			info->fb_flags |= FB_FLAG_ROTATE_180;
+			break;
+		case 270:
+			info->fb_flags |= FB_FLAG_ROTATE_90;
+			info->fb_flags |= FB_FLAG_ROTATE_180;
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (info->fb_flags & FB_FLAG_ROTATE_90) {
+		vd->vd_height = MIN(VT_FB_MAX_HEIGHT, info->fb_width);
+		vd->vd_width = MIN(VT_FB_MAX_WIDTH, info->fb_height);
+		margin = (info->fb_height - vd->vd_width) >> 1;
+		vd->vd_transpose = margin * info->fb_stride;
+		margin = (info->fb_width - vd->vd_height) >> 1;
+		vd->vd_transpose += margin * (info->fb_bpp / NBBY);
+	} else {
+		vd->vd_height = MIN(VT_FB_MAX_HEIGHT, info->fb_height);
+		margin = (info->fb_height - vd->vd_height) >> 1;
+		vd->vd_transpose = margin * info->fb_stride;
+		vd->vd_width = MIN(VT_FB_MAX_WIDTH, info->fb_width);
+		margin = (info->fb_width - vd->vd_width) >> 1;
+		vd->vd_transpose += margin * (info->fb_bpp / NBBY);
+	}
 	vd->vd_video_dev = info->fb_video_dev;
 
 	if (info->fb_size == 0)

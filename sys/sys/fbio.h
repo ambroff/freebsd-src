@@ -151,6 +151,8 @@ struct fb_info {
 #define	FB_FLAG_NOMMAP		1	/* mmap unsupported. */
 #define	FB_FLAG_NOWRITE		2	/* disable writes for the time being */
 #define	FB_FLAG_MEMATTR		4	/* override memattr for mmap */
+#define FB_FLAG_ROTATE_90	0x10	/* rotate vt */
+#define FB_FLAG_ROTATE_180	0x20
 	vm_memattr_t	fb_memattr;
 	int		fb_stride;
 	int		fb_bpp;		/* bits per pixel */
